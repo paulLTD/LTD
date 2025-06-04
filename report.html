@@ -1,50 +1,103 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-  <title>Table Report</title>
-  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <title>LTD Projects Report</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        h2 {
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-  <div id="report-content">Loading report...</div>
-  <script src="./report.js"></script>
+    <h2>LTD Projects Report</h2>
+    <table id="reportTable">
+        <thead>
+            <tr>
+                <th>Card Name</th>
+                <th>List Name</th>
+                <th>Team Members</th>
+            </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+    </table>
+    <script>
+        window.TrelloPowerUp.initialize({
+            'show-settings': function (t, options) {
+                return t.popup({
+                    title: 'Settings',
+                    url: './settings.html',
+                    height: 184
+                });
+            }
+        });
+
+        // Fetch and display report data
+        TrelloPowerUp.iframe().then(function (t) {
+            t.board('all').then(function (board) {
+                if (board.name !== 'LTD projects') {
+                    document.getElementById('reportBody').innerHTML = '<tr><td colspan="3">This Power-Up is designed for the "LTD projects" board.</td></tr>';
+                    return;
+                }
+                return Promise.all([
+                    t.cards('id', 'name', 'idList', 'members'),
+                    t.lists('id', 'name'),
+                    t.members('fullName')
+                ]).then(function ([cards, lists, members]) {
+                    const listMap = lists.reduce((map, list) => {
+                        map[list.id] = list.name;
+                        return map;
+                    }, {});
+
+                    const memberMap = members.reduce((map, member) => {
+                        map[member.id] = member.fullName;
+                        return map;
+                    }, {});
+
+                    const tableBody = document.getElementById('reportBody');
+                    cards.forEach(card => {
+                        const row = document.createElement('tr');
+                        const cardName = document.createElement('td');
+                        cardName.textContent = card.name;
+                        const listName = document.createElement('td');
+                        listName.textContent = listMap[card.idList] || 'Unknown List';
+                        const teamMembers = document.createElement('td');
+                        teamMembers.textContent = card.members.length > 0
+                            ? card.members.map(member => memberMap[member.id]).join(', ')
+                            : 'None';
+
+                        row.appendChild(cardName);
+                        row.appendChild(listName);
+                        row.appendChild(teamMembers);
+                        tableBody.appendChild(row);
+                    });
+                });
+            }).catch(function (error) {
+                console.error('Error generating report:', error);
+                document.getElementById('reportBody').innerHTML = '<tr><td colspan="3">Error generating report.</td></tr>';
+            });
+        });
+    </script>
 </body>
 </html>
