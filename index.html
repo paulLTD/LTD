@@ -1,58 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>LTD Projects Report Power-Up</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trello Power-Up: LTD Projects Report</title>
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        h2 {
-            color: #333;
-        }
-
-        button {
-            padding: 10px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100">
     <script>
-        window.TrelloPowerUp.initialize({
+        /* global TrelloPowerUp */
+        const t = TrelloPowerUp.iframe();
+
+        // Initialize Power-Up
+        TrelloPowerUp.initialize({
             'board-buttons': function (t, options) {
                 return [{
-                    icon: 'https://cdn.glitch.com/your-icon-url/icon.png', // Replace with your icon URL
-                    text: 'Generate Report',
+                    text: 'Generate LTD Projects Report',
                     callback: function (t) {
-                        return t.popup({
+                        return t.modal({
                             title: 'LTD Projects Report',
-                            url: './report.html',
-                            height: 600
+                            url: './index.html',
+                            fullscreen: true
                         });
                     }
                 }];
+            },
+            'show-settings': function (t, options) {
+                return t.popup({
+                    title: 'Settings',
+                    url: './settings.html',
+                    height: 184
+                });
             }
         });
+
+        // Function to fetch and display report
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch board data
+                const board = await t.board('name', 'cards', 'lists', 'members', 'labels');
+                if (board.name !== 'LTD Projects') {
+                    document.body.innerHTML = '<div class="p-4 text-red-600">This Power-Up is designed for the "LTD Projects" board only.</div>';
+                    return;
+                }
+
+                // Fetch all actions for the board
+                const actions = await t.getRestApi().get(`boards/${board.id}/actions`, {
+                    filter: 'all',
+                    limit: 1000 // Trello API limit
+                });
+
+                // Create a map of list IDs to list names
+                const listMap = {};
+                board.lists.forEach(list => {
+                    listMap[list.id] = list.name;
+                });
+
+                // Create a map of member IDs to member names
+                const memberMap = {};
+                board.members.forEach(member => {
+                    memberMap[member.id] = member.fullName || member.username;
+                });
+
+                // Create a map of label IDs to label names
+                const labelMap = {};
+                board.labels.forEach(label => {
+                    labelMap[label.id] = label.name || 'Unnamed Label';
+                });
+
+                // Group actions by card ID
+                const cardActions = {};
+                actions.forEach(action => {
+                    if (action.data.card) {
+                        const cardId = action.data.card.id;
+                        if (!cardActions[cardId]) {
+                            cardActions[cardId] = [];
+                        }
+                        cardActions[cardId].push({
+                            type: action.type,
+                            date: action.date,
+                            text: formatActionText(action, memberMap)
+                        });
+                    }
+                });
+
+                // Sort actions by date and limit to 5 per card
+                Object.keys(cardActions).forEach(cardId => {
+                    cardActions[cardId].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    cardActions[cardId] = cardActions[cardId].slice(0, 5);
+                });
+
+                // Generate table rows
+                const tableRows = board.cards.map(card => {
+                    const listName = listMap[card.idList] || 'Unknown List';
+                    const members = card.idMembers.map(id => memberMap[id] || 'Unknown Member').join(', ');
+                    const labels = card.idLabels.map(id => labelMap[id] || 'Unnamed Label').join(', ');
+                    const recentActivities = (cardActions[card.id] || [])
+                        .map(action => `${new Date(action.date).toLocaleString()}: ${action.text}`)
+                        .join('<br>') || 'No recent activity';
+
+                    return `
+                <tr class="border-b">
+                  <td class="px-4 py-2">${card.name}</td>
+                  <td class="px-4 py-2">${listName}</td>
+                  <td class="px-4 py-2">${members || 'None'}</td>
+                  <td class="px-4 py-2">${labels || 'None'}</td>
+                  <td class="px-4 py-2">${recentActivities}</td>
+                </tr>
+              `;
+                }).join('');
+
+                // Render table
+                document.body.innerHTML = `
+              <div class="container mx-auto p-4">
+                <h1 class="text-2xl font-bold mb-4">LTD Projects Report</h1>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full bg-white border">
+                    <thead>
+                      <tr class="bg-gray-200">
+                        <th class="px-4 py-2 text-left">Card Name</th>
+                        <th class="px-4 py-2 text-left">List</th>
+                        <th class="px-4 py-2 text-left">Team Members</th>
+                        <th class="px-4 py-2 text-left">Labels</th>
+                        <th class="px-4 py-2 text-left">Recent Activity (Last 5)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${tableRows}
+                    </tbody>
+                  </table>
+                </div>
+                <button id="closeBtn" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Close</button>
+              </div>
+            `;
+
+                // Add close button functionality
+                document.getElementById('closeBtn').addEventListener('click', () => {
+                    t.closeModal();
+                });
+
+            } catch (error) {
+                console.error('Error generating report:', error);
+                document.body.innerHTML = '<div class="p-4 text-red-600">Error generating report. Please try again.</div>';
+            }
+        });
+
+        // Helper function to format action text
+        function formatActionText(action, memberMap) {
+            const member = memberMap[action.idMemberCreator] || 'Unknown';
+            switch (action.type) {
+                case 'commentCard':
+                    return `${member} commented: ${action.data.text}`;
+                case 'updateCard':
+                    if (action.data.listBefore && action.data.listAfter) {
+                        return `${member} moved card from ${action.data.listBefore.name} to ${action.data.listAfter.name}`;
+                    } else if (action.data.old && action.data.old.name) {
+                        return `${member} renamed card to ${action.data.card.name}`;
+                    }
+                    return `${member} updated card`;
+                case 'addMemberToCard':
+                    return `${member} added ${memberMap[action.data.idMember] || 'someone'} to card`;
+                case 'removeMemberFromCard':
+                    return `${member} removed ${memberMap[action.data.idMember] || 'someone'} from card`;
+                case 'addLabelToCard':
+                    return `${member} added label to card`;
+                case 'removeLabelFromCard':
+                    return `${member} removed label from card`;
+                default:
+                    return `${member} performed action: ${action.type}`;
+            }
+        }
     </script>
 </body>
 </html>
