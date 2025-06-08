@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Card Names Table</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div id="table-container">
+        <h3>Card Names</h3>
+        <table id="card-table">
+            <thead>
+                <tr>
+                    <th>Card Name</th>
+                </tr>
+            </thead>
+            <tbody id="card-table-body"></tbody>
+        </table>
+    </div>
+    <script src="https://p.trellocdn.com/powerup.min.js"></script>
+    <script src="./table.js"></script>
+</body>
+</html>
