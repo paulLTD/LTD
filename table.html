@@ -1,38 +1,23 @@
-<!DOCTYPE html>
-<html>
+﻿<html>
 <head>
-    <title>Card Names Table</title>
+    <link rel="stylesheet" href="https://p.trellocdn.com/power-up.min.css" />
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
+        select {
+            height: 30px;
         }
     </style>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
 </head>
 <body>
-    <div id="table-container">
-        <h3>Card Names</h3>
-        <table id="card-table">
-            <thead>
-                <tr>
-                    <th>Card Name</th>
-                </tr>
-            </thead>
-            <tbody id="card-table-body"></tbody>
-        </table>
-    </div>
-    <script src="https://p.trellocdn.com/powerup.min.js"></script>
-    <script src="./table.js"></script>
+    <form id="estimate">
+        <label for="estimateSize">Estimate:</label>
+        <select name="size" id="estimateSize">
+            <option value="small">Small 👕</option>
+            <option value="medium">Medium 👚</option>
+            <option value="large">Large 👔</option>
+            <option value="x-large">Extra Large 👖</option>
+        </select>
+        <button type="submit" class="mod-primary">Save</button>
+    </form>
 </body>
 </html>
