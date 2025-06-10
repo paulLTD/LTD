@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Card Activity Table</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f5f7;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            color: #172b4d;
+        }
+    </style>
+</head>
+<body>
+    <h2>Card Activity Table</h2>
+    <table id="activity-table">
+        <thead>
+            <tr>
+                <th>Card Name</th>
+                <th>Recent Activity</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
+
+    <script>
+    /* global TrelloPowerUp */
+    var Promise = TrelloPowerUp.Promise;
+    var t = TrelloPowerUp.iframe();
+
+    // Function to format action type and details
+    function formatAction(action) {
+      var actionType = action.type;
+      var details = '';
+      if (actionType === 'createCard') {
+        details = 'Card created';
+      } else if (actionType === 'updateCard') {
+        details = 'Card updated';
+        if (action.data.listBefore && action.data.listAfter) {
+          details = `Moved from ${action.data.listBefore.name} to ${action.data.listAfter.name}`;
+        } else if (action.data.old && action.data.old.name) {
+          details = `Renamed to ${action.data.card.name}`;
+        }
+      } else if (actionType === 'commentCard') {
+        details = `Comment: ${action.data.text}`;
+      } else {
+        details = actionType;
+      }
+      return details;
+    }
+
+    // Function to format date
+    function formatDate(dateStr) {
+      var date = new Date(dateStr);
+      return date.toLocaleString();
+    }
+
+    // Fetch cards and their actions
+    t.render(function() {
+      return Promise.all([
+        t.cards('id', 'name'),
+        t.board('actions')
+      ])
+      .spread(function(cards, board) {
+        var tableBody = document.getElementById('table-body');
+        tableBody.innerHTML = ''; // Clear table
+
+        // Process each card
+        return Promise.all(cards.map(function(card) {
+          // Fetch actions for each card
+          return t.getRestApi()
+            .get(`/cards/${card.id}/actions`, { filter: 'createCard,updateCard,commentCard' })
+            .then(function(actions) {
+              var recentAction = actions[0]; // Most recent action
+              var row = document.createElement('tr');
+              var nameCell = document.createElement('td');
+              var activityCell = document.createElement('td');
+              var timeCell = document.createElement('td');
+
+              nameCell.textContent = card.name;
+              activityCell.textContent = recentAction ? formatAction(recentAction) : 'No recent activity';
+              timeCell.textContent = recentAction ? formatDate(recentAction.date) : '';
+
+              row.appendChild(nameCell);
+              row.appendChild(activityCell);
+              row.appendChild(timeCell);
+              tableBody.appendChild(row);
+            });
+        }))
+        .then(function() {
+          t.sizeTo('#activity-table').done();
+        });
+      });
+    });
+    </script>
+</body>
+</html>

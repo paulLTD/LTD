@@ -1,10 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Project Table</title>
+    <title>Card Activity Table Power-Up</title>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f5f7;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            color: #172b4d;
+        }
+    </style>
 </head>
 <body>
-    <script src="https://p.trellocdn.com/powerup.min.js"></script>
-    <script src="./powerup.js"></script>
+    <script>
+        /* global TrelloPowerUp */
+        var Promise = TrelloPowerUp.Promise;
+        var BLACK_ICON = 'https://cdn.hyperdev.com/us-east-1:3d31b21c-01a0-4da2-8827-4bc6e88b7618/icon-black.svg';
+        var WHITE_ICON = 'https://cdn.hyperdev.com/us-east-1:3d31b21c-01a0-4da2-8827-4bc6e88b7618/icon-white.svg';
+
+        window.TrelloPowerUp.initialize({
+            'board-buttons': function (t, opts) {
+                return [{
+                    icon: {
+                        dark: WHITE_ICON,
+                        light: BLACK_ICON
+                    },
+                    text: 'Card Activity Table',
+                    callback: function (t) {
+                        return t.popup({
+                            title: 'Card Activity Table',
+                            url: './activity-table.html',
+                            height: 600
+                        });
+                    },
+                    condition: 'always'
+                }];
+            },
+            'show-settings': function (t, options) {
+                return t.popup({
+                    title: 'Settings',
+                    url: './settings.html',
+                    height: 184
+                });
+            }
+        });
+    </script>
 </body>
 </html>
