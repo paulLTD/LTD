@@ -11,7 +11,7 @@
       "callback": "function(t) { return { icon: 'https://example.com/icon.png', text: 'Recent Activity', callback: function(t) { t.boardBar({ url: './index.html', height: 600 }); } } }"
     }
   ],
-  "iframeConnectorUrl": "https://your-hosted-domain/iframe-connector.html",
+  "iframeConnectorUrl": "https://paulltd.github.io/LTD/index.html",
   "developer": {
     "name": "Your Name",
     "email": "your.email@example.com"
