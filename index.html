@@ -1,74 +1,155 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Card Activity Table Power-Up</title>
-    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <title>Recent Card Activity Power-Up</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f4f5f7;
+            background-color: #f4f7f8;
+        }
+
+        h1 {
+            color: #172b4d;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background-color: #fff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
         }
 
         th, td {
+            border: 1px solid #dfe1e6;
             padding: 10px;
-            border: 1px solid #ddd;
             text-align: left;
         }
 
         th {
-            background-color: #f0f0f0;
-            font-weight: bold;
+            background-color: #dfe1e6;
+            color: #172b4d;
         }
 
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #fafbfc;
         }
 
-        h2 {
-            color: #172b4d;
+        a {
+            color: #0052cc;
+            text-decoration: none;
+        }
+
+            a:hover {
+                text-decoration: underline;
+            }
+
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #6b778c;
         }
     </style>
 </head>
 <body>
+    <h1>Recent Card Activity</h1>
+    <div id="content">
+        <p class="loading">Loading card activities...</p>
+    </div>
+
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
     <script>
         /* global TrelloPowerUp */
-        var Promise = TrelloPowerUp.Promise;
-        var BLACK_ICON = 'https://cdn.hyperdev.com/us-east-1:3d31b21c-01a0-4da2-8827-4bc6e88b7618/icon-black.svg';
-        var WHITE_ICON = 'https://cdn.hyperdev.com/us-east-1:3d31b21c-01a0-4da2-8827-4bc6e88b7618/icon-white.svg';
+        var t = TrelloPowerUp.iframe();
 
-        window.TrelloPowerUp.initialize({
-            'board-buttons': function (t, opts) {
-                return [{
-                    icon: {
-                        dark: WHITE_ICON,
-                        light: BLACK_ICON
-                    },
-                    text: 'Card Activity Table',
-                    callback: function (t) {
-                        return t.popup({
-                            title: 'Card Activity Table',
-                            url: './activity-table.html',
-                            height: 600
+        // Initialize Power-Up
+        t.render(function () {
+            // Get the current board
+            return t.board('id', 'name', 'cards').then(function (board) {
+                // Get all cards on the board
+                return board.cards('all').then(function (cards) {
+                    // Create promises to fetch actions for each card
+                    var actionPromises = cards.map(function (card) {
+                        return t.getRestApi()
+                            .get(`/cards/${card.id}/actions`, { filter: 'all', limit: 5 })
+                            .then(function (actions) {
+                                return { card: card, actions: actions };
+                            });
+                    });
+
+                    // Resolve all action promises
+                    return Promise.all(actionPromises).then(function (cardActions) {
+                        // Sort cards by the date of their most recent action
+                        cardActions.sort(function (a, b) {
+                            var dateA = a.actions[0] ? new Date(a.actions[0].date) : new Date(0);
+                            var dateB = b.actions[0] ? new Date(b.actions[0].date) : new Date(0);
+                            return dateB - dateA; // Sort descending (most recent first)
                         });
-                    },
-                    condition: 'always'
-                }];
-            },
-            'show-settings': function (t, options) {
-                return t.popup({
-                    title: 'Settings',
-                    url: './settings.html',
-                    height: 184
+
+                        // Build the HTML table
+                        var html = `
+                  <table>
+                    <tr>
+                      <th>Card Name</th>
+                      <th>List</th>
+                      <th>Latest Activity</th>
+                      <th>Activity Description</th>
+                    </tr>
+                `;
+
+                        cardActions.forEach(function (cardAction) {
+                            var card = cardAction.card;
+                            var latestAction = cardAction.actions[0]; // Most recent action
+                            var listName = card.list ? card.list.name : 'Unknown';
+
+                            // Format the action description
+                            var actionDesc = 'No recent activity';
+                            var actionDate = '';
+                            if (latestAction) {
+                                actionDate = new Date(latestAction.date).toLocaleString();
+                                switch (latestAction.type) {
+                                    case 'updateCard':
+                                        actionDesc = `Updated by ${latestAction.memberCreator.fullName}`;
+                                        if (latestAction.data.listAfter) {
+                                            actionDesc += `: Moved to ${latestAction.data.listAfter.name}`;
+                                        } else if (latestAction.data.old && latestAction.data.old.desc) {
+                                            actionDesc += ': Description updated';
+                                        } else {
+                                            actionDesc += ': Card updated';
+                                        }
+                                        break;
+                                    case 'commentCard':
+                                        actionDesc = `Commented by ${latestAction.memberCreator.fullName}: "${latestAction.data.text}"`;
+                                        break;
+                                    case 'createCard':
+                                        actionDesc = `Created by ${latestAction.memberCreator.fullName}`;
+                                        break;
+                                    default:
+                                        actionDesc = `Action by ${latestAction.memberCreator.fullName}: ${latestAction.type}`;
+                                }
+                            }
+
+                            html += `
+                    <tr>
+                      <td><a href="${card.url}" target="_blank">${card.name}</a></td>
+                      <td>${listName}</td>
+                      <td>${actionDate}</td>
+                      <td>${actionDesc}</td>
+                    </tr>
+                  `;
+                        });
+
+                        html += '</table>';
+
+                        // Update the content div
+                        document.getElementById('content').innerHTML = html;
+
+                        // Resize the iframe to fit content
+                        t.sizeTo('#content');
+                    });
                 });
-            }
+            }).catch(function (error) {
+                document.getElementById('content').innerHTML = '<p>Error loading activities: ' + error.message + '</p>';
+            });
         });
     </script>
 </body>
