@@ -10,14 +10,13 @@ window.TrelloPowerUp.initialize({
         return [
 
             {
-                "name": "Recent Card Activity",
-                "description": "Displays a view of recent activity for each card on the board.",
-                "icon": {
+                description: "Displays a view of recent activity for each card on the board.",
+                icon: {
                     dark: WHITE_ICON,
                     light: DARK_ICON
                 },
-                "text": "My Board Button",
-                "callback": "function(t)",
+                text: "My Board Button",
+                callback: "function(t)",
         { "console.log('clicked');" }
       }
     ]
