@@ -2,7 +2,7 @@
 var t = TrelloPowerUp.initialize({
     'board-buttons': function (t, options) {
         return [{
-            icon: 'https://paulltd.github.io/LTD/icon.png', // Optional: Add an icon file at this path if desired
+            icon: 'https://paulltd.github.io/LTD/white_icon.png', // Optional: Add an icon file at this path if desired
             text: 'LTD Button',
             callback: function (t) {
                 // No action performed for now
