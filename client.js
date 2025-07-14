@@ -10,7 +10,6 @@ var t = TrelloPowerUp.initialize({
                     title: 'LTD Report',
                     url: './list-cards.html',
                     arguments: { cards : cards },
-                    outerWidth: 600,
                     height: 900
                  });
             }
