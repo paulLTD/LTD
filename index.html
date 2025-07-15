@@ -8,6 +8,26 @@
 <body>
     <script src="https://p.trellocdn.com/power-up.min.js"></script>
     <script src="client.js"></script>
-    text
+    <h2>Cards on Board</h2>
+    <ul id="card-list"></ul>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <script>
+        var t = TrelloPowerUp.iframe();
+        t.render(function () {
+            t.getContext().then(function (context) {
+                var cards = context.cards || [];
+                var cardList = document.getElementById('card-list');
+                if (cards.length === 0) {
+                    cardList.innerHTML = '<li>No cards found on this board.</li>';
+                } else {
+                    cards.forEach(function (card) {
+                        var li = document.createElement('li');
+                        li.textContent = card.name;
+                        cardList.appendChild(li);
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
