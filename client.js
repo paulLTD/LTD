@@ -8,8 +8,8 @@ var t = TrelloPowerUp.initialize({
                 // No action performed for now
                 return t.popup({
                     title: 'LTD Report',
-                    url: './list-cards.html',
-                    args: { cards: cards },
+                    url: './listcards.html',
+                    //args: { cards: cards },
                     height: 200
                  });
             }
