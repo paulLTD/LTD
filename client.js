@@ -9,7 +9,7 @@ var t = TrelloPowerUp.initialize({
                 return t.popup({
                     title: 'LTD Report',
                     url: './list-cards.html',
-                    //args: { cards: cards },
+                    args: { cards: cards },
                     height: 400
                  });
             }
